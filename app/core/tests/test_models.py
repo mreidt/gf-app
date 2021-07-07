@@ -1,6 +1,13 @@
 from django.test import TestCase
 from django.contrib.auth import get_user_model
 
+from core import models
+
+
+def sample_user(email='test@gmail.com', password='testpass'):
+    """Create a sample user"""
+    return get_user_model().objects.create_user(email, password)
+
 
 class ModelTests(TestCase):
 
@@ -37,3 +44,21 @@ class ModelTests(TestCase):
 
         self.assertTrue(user.is_superuser)
         self.assertTrue(user.is_staff)
+
+    def test_account_type_str(self):
+        """Test the account type string representation"""
+        account_type = models.AccountType.objects.create(
+            user=sample_user(),
+            name='Bank Account',
+        )
+
+        self.assertEqual(str(account_type), account_type.name)
+
+    def test_account_str(self):
+        """Test the account string representation"""
+        account = models.Account.objects.create(
+            user=sample_user(),
+            name='International Bank Account',
+        )
+
+        self.assertEqual(str(account), account.name)
