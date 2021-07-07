@@ -53,3 +53,12 @@ class ModelTests(TestCase):
         )
 
         self.assertEqual(str(account_type), account_type.name)
+
+    def test_account_str(self):
+        """Test the account string representation"""
+        account = models.Account.objects.create(
+            user=sample_user(),
+            name='International Bank Account',
+        )
+
+        self.assertEqual(str(account), account.name)

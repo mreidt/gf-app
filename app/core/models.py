@@ -50,3 +50,21 @@ class AccountType(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class Account(models.Model):
+    """Account to keep tracking of operations"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=255)
+    active = models.BooleanField(default=True)
+    acctype = models.ForeignKey(
+        AccountType,
+        on_delete=models.SET_NULL,
+        null=True
+    )
+
+    def __str__(self) -> str:
+        return self.name
