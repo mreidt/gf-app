@@ -6,6 +6,7 @@ from operation import views
 router = DefaultRouter()
 router.register('accounttype', views.AccountTypeViewSet)
 router.register('account', views.AccountViewSet)
+router.register('tag', views.TagViewSet)
 
 app_name = 'operation'
 

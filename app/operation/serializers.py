@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from core.models import Account, AccountType
+from core.models import Account, AccountType, Tag
 
 
 class AccountTypeSerializer(serializers.ModelSerializer):
@@ -27,3 +27,12 @@ class AccountSerializer(serializers.ModelSerializer):
 class AccountDetailSerializer(AccountSerializer):
     """Serialize a account detail"""
     acctype = AccountTypeSerializer()
+
+
+class TagSerializer(serializers.ModelSerializer):
+    """Serializer for tag object"""
+
+    class Meta:
+        model = Tag
+        fields = ('id', 'name', 'description')
+        read_only_fields = ('id',)

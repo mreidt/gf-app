@@ -2,7 +2,7 @@ from rest_framework import viewsets
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
-from core.models import Account, AccountType
+from core.models import Account, AccountType, Tag
 
 from operation import serializers
 
@@ -55,4 +55,24 @@ class AccountViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         """Create a new recipe"""
+        serializer.save(user=self.request.user)
+
+
+class TagViewSet(viewsets.ModelViewSet):
+    """Manage tag in the database"""
+    queryset = Tag.objects.all()
+    serializer_class = serializers.TagSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
+
+    def get_queryset(self):
+        """Return objects for the current authenticated user only"""
+        queryset = self.queryset
+
+        return queryset.filter(
+            user=self.request.user
+        ).order_by('name').distinct()
+
+    def perform_create(self, serializer):
+        """Create a new object"""
         serializer.save(user=self.request.user)
