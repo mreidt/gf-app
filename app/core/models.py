@@ -68,3 +68,30 @@ class Account(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+
+class Tag(models.Model):
+    """Tag to be attached to operations"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(max_length=255, blank=True)
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class Operation(models.Model):
+    """Operation object"""
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE
+    )
+    name = models.CharField(max_length=255)
+    description = models.TextField(max_length=255, blank=True)
+    value = models.DecimalField(max_digits=6, decimal_places=2)
+    date = models.DateField(auto_now=False, auto_now_add=False, null=True)
+    tags = models.ManyToManyField('Tag')
+    account = models.ForeignKey('Account', on_delete=models.CASCADE)
