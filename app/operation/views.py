@@ -93,6 +93,9 @@ class OperationViewSet(viewsets.ModelViewSet):
         """Retrieve the operations for the authenticated user"""
         tags = self.request.query_params.get('tags')
         account = self.request.query_params.get('account')
+        year = self.request.query_params.get('year')
+        month = self.request.query_params.get('month')
+        day = self.request.query_params.get('day')
 
         queryset = self.queryset
         if tags:
@@ -101,6 +104,14 @@ class OperationViewSet(viewsets.ModelViewSet):
         if account:
             account_id = self._params_to_ints(account)
             queryset = queryset.filter(account__id__in=account_id)
+        if year:
+            queryset = queryset.filter(date__year=year)
+        if year and month:
+            queryset = queryset.filter(date__year=year, date__month=month)
+        if year and month and day:
+            queryset = queryset.filter(
+                date__year=year, date__month=month, date__day=day
+            )
         return queryset.filter(user=self.request.user)
 
     def get_serializer_class(self):

@@ -2,7 +2,7 @@ from core.models import Account, Tag, Operation
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.test import TestCase
-from datetime import datetime
+from datetime import datetime, date
 from operation.serializers import (OperationSerializer,
                                    OperationDetailSerializer
                                    )
@@ -260,4 +260,104 @@ class PrivateOperationApiTests(TestCase):
         serializer3 = OperationSerializer(operation3)
         self.assertIn(serializer1.data, res.data)
         self.assertIn(serializer2.data, res.data)
+        self.assertNotIn(serializer3.data, res.data)
+
+
+class OperationDateTests(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+        self.user = get_user_model().objects.create_user(
+            'sample_user@gmail.com',
+            'testpass123'
+        )
+        self.client.force_authenticate(self.user)
+        self.operation = sample_operation(user=self.user)
+
+    def test_filter_operation_by_year(self):
+        """Test filtering operation by year"""
+        operation1 = sample_operation(user=self.user)
+        operation2 = sample_operation(
+            user=self.user,
+            date=date(datetime.now().year-1, 1, 1)
+        )
+        operation3 = sample_operation(
+            user=self.user,
+            date=date(datetime.now().year-2, 1, 1)
+        )
+        res = self.client.get(
+            OPERATIONS_URL,
+            {'year': operation2.date.year}
+        )
+
+        serializer1 = OperationSerializer(operation1)
+        serializer2 = OperationSerializer(operation2)
+        serializer3 = OperationSerializer(operation3)
+
+        self.assertEqual(len(res.data), 1)
+        self.assertIn(serializer2.data, res.data)
+        self.assertNotIn(serializer1.data, res.data)
+        self.assertNotIn(serializer3.data, res.data)
+
+    def test_filter_operation_by_year_and_month(self):
+        """Test filtering operation by year and month"""
+        operation1 = sample_operation(
+            user=self.user,
+            date=date(year=datetime.now().year, month=1, day=1)
+        )
+        operation2 = sample_operation(
+            user=self.user,
+            date=date(year=datetime.now().year-1, month=1, day=1)
+        )
+        operation3 = sample_operation(
+            user=self.user,
+            date=date(year=datetime.now().year-1, month=2, day=1)
+        )
+        res = self.client.get(
+            OPERATIONS_URL,
+            {
+                'year': operation2.date.year,
+                'month': operation2.date.month
+            }
+        )
+
+        serializer1 = OperationSerializer(operation1)
+        serializer2 = OperationSerializer(operation2)
+        serializer3 = OperationSerializer(operation3)
+
+        self.assertEqual(len(res.data), 1)
+        self.assertIn(serializer2.data, res.data)
+        self.assertNotIn(serializer1.data, res.data)
+        self.assertNotIn(serializer3.data, res.data)
+
+    def test_filter_operation_by_year_month_day(self):
+        """Test filtering operation by year and month"""
+        operation1 = sample_operation(
+            user=self.user,
+            date=date(year=datetime.now().year-1, month=1, day=1)
+        )
+        operation2 = sample_operation(
+            user=self.user,
+            date=date(year=datetime.now().year-1, month=1, day=2)
+        )
+        operation3 = sample_operation(
+            user=self.user,
+            date=date(year=datetime.now().year-1, month=2, day=2)
+        )
+        res = self.client.get(
+            OPERATIONS_URL,
+            {
+                'year': operation2.date.year,
+                'month': operation2.date.month,
+                'day': operation2.date.day
+            }
+        )
+
+        serializer1 = OperationSerializer(operation1)
+        serializer2 = OperationSerializer(operation2)
+        serializer3 = OperationSerializer(operation3)
+
+        self.assertEqual(len(res.data), 1)
+        self.assertIn(serializer2.data, res.data)
+        self.assertNotIn(serializer1.data, res.data)
         self.assertNotIn(serializer3.data, res.data)
