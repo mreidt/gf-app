@@ -44,6 +44,9 @@ class OperationSerializer(serializers.ModelSerializer):
         many=True,
         queryset=Tag.objects.all()
     )
+    account = serializers.PrimaryKeyRelatedField(
+        queryset=Account.objects.all()
+    )
 
     class Meta:
         model = Operation
@@ -55,4 +58,5 @@ class OperationSerializer(serializers.ModelSerializer):
 
 class OperationDetailSerializer(OperationSerializer):
     """Serialize an operation detail"""
+    account = AccountSerializer(read_only=True)
     tags = TagSerializer(many=True, read_only=True)

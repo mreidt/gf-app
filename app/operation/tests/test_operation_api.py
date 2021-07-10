@@ -3,7 +3,9 @@ from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.test import TestCase
 from datetime import datetime
-from operation.serializers import OperationSerializer
+from operation.serializers import (OperationSerializer,
+                                   OperationDetailSerializer
+                                   )
 
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -17,7 +19,7 @@ def detail_url(operation_id):
     return reverse('operation:operation-detail', args=[operation_id])
 
 
-def sample_tag(user, name='Main course'):
+def sample_tag(user, name='Sample tag'):
     """Create an return a sample tag"""
     return Tag.objects.create(user=user, name=name)
 
@@ -72,11 +74,11 @@ class PrivateOperationApiTests(TestCase):
     def test_retrieve_operations(self):
         """Test retrieving a list of operations"""
         sample_operation(user=self.user)
-        sample_operation(user=self.user)
+        sample_operation(user=self.user, name='Another operation')
 
         res = self.client.get(OPERATIONS_URL)
 
-        operations = Operation.objects.all()
+        operations = Operation.objects.all().order_by('-id')
         serializer = OperationSerializer(operations, many=True)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(res.data, serializer.data)
@@ -97,12 +99,14 @@ class PrivateOperationApiTests(TestCase):
         self.assertEqual(res.status_code, status.HTTP_200_OK)
         self.assertEqual(len(res.data), 1)
         self.assertEqual(res.data, serializer.data)
-    
+
     def test_view_operation_detail(self):
         """Test viewing a operation detail"""
-        operation = sample_operation(user=self.user)
+        operation = sample_operation(
+            user=self.user,
+            account=sample_account(user=self.user)
+        )
         operation.tags.add(sample_tag(user=self.user))
-        operation.account.add(sample_account(user=self.user))
 
         url = detail_url(operation.id)
         res = self.client.get(url)
@@ -116,7 +120,7 @@ class PrivateOperationApiTests(TestCase):
             'name': 'Supermarket',
             'value': -5.00,
             'date': datetime.now().date(),
-            'account': sample_account(self.user)
+            'account': sample_account(self.user).id
         }
         res = self.client.post(OPERATIONS_URL, payload)
 
@@ -124,7 +128,10 @@ class PrivateOperationApiTests(TestCase):
         operation = Operation.objects.get(id=res.data['id'])
 
         for key in payload.keys():
-            self.assertEqual(payload[key], getattr(operation, key))
+            if key == 'account':
+                self.assertEqual(payload[key], getattr(operation, key).id)
+            else:
+                self.assertEqual(payload[key], getattr(operation, key))
 
     def test_create_operation_with_tags(self):
         """Test creating a recipe with tags"""
@@ -134,7 +141,7 @@ class PrivateOperationApiTests(TestCase):
             'name': 'Supermarket',
             'value': -5.00,
             'date': datetime.now().date(),
-            'account': sample_account(self.user),
+            'account': sample_account(self.user).id,
             'tags': [tag1.id, tag2.id]
         }
         res = self.client.post(OPERATIONS_URL, payload)
@@ -161,7 +168,7 @@ class PrivateOperationApiTests(TestCase):
         tags = operation.tags.all()
         self.assertEqual(len(tags), 1)
         self.assertIn(new_tag, tags)
-    
+
     def test_full_update_operation(self):
         """Test updating a operation with put"""
         operation = sample_operation(user=self.user)
@@ -170,16 +177,18 @@ class PrivateOperationApiTests(TestCase):
             'name': 'Supermarket',
             'value': -5.00,
             'date': datetime.now().date(),
-            'account': sample_account(self.user),
+            'account': sample_account(self.user).id,
         }
         url = detail_url(operation.id)
         self.client.put(url, payload)
 
         operation.refresh_from_db()
-        self.assertEqual(operation.name, payload['name'])
-        self.assertEqual(operation.value, payload['value'])
-        self.assertEqual(operation.date, payload['date'])
-        self.assertEqual(operation.account, payload['account'])
+        for key in payload.keys():
+            if key == 'account':
+                self.assertEqual(payload[key], getattr(operation, key).id)
+            else:
+                self.assertEqual(payload[key], getattr(operation, key))
+
         tags = operation.tags.all()
         self.assertEqual(len(tags), 0)
 
@@ -190,13 +199,13 @@ class PrivateOperationApiTests(TestCase):
             name='Operation 1',
             value=-17.90,
             account=sample_account(user=self.user, name='New account')
-            )
+        )
         operation2 = sample_operation(
             user=self.user,
             name='Operation 2',
             value=-23.00,
             account=sample_account(user=self.user, name='New account 2')
-            )
+        )
         tag1 = sample_tag(user=self.user, name='Tag 1')
         tag2 = sample_tag(user=self.user, name='Tag 2')
 
@@ -208,6 +217,42 @@ class PrivateOperationApiTests(TestCase):
         res = self.client.get(
             OPERATIONS_URL,
             {'tags': f'{tag1.id},{tag2.id}'}
+        )
+
+        serializer1 = OperationSerializer(operation1)
+        serializer2 = OperationSerializer(operation2)
+        serializer3 = OperationSerializer(operation3)
+        self.assertIn(serializer1.data, res.data)
+        self.assertIn(serializer2.data, res.data)
+        self.assertNotIn(serializer3.data, res.data)
+
+    def test_filter_operations_by_account(self):
+        """Test returning operations with specific account"""
+        account1 = sample_account(user=self.user, name='account 1')
+        account2 = sample_account(user=self.user, name='account 2')
+        account3 = sample_account(user=self.user, name='account 3')
+        operation1 = sample_operation(
+            user=self.user,
+            name='Operation 1',
+            value=-17.90,
+            account=account1
+        )
+        operation2 = sample_operation(
+            user=self.user,
+            name='Operation 2',
+            value=-23.00,
+            account=account2
+        )
+
+        operation3 = sample_operation(
+            user=self.user,
+            name='Operation 3',
+            account=account3
+        )
+
+        res = self.client.get(
+            OPERATIONS_URL,
+            {'account': f'{account1.id},{account2.id}'}
         )
 
         serializer1 = OperationSerializer(operation1)
