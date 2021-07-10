@@ -7,6 +7,7 @@ router = DefaultRouter()
 router.register('accounttype', views.AccountTypeViewSet)
 router.register('account', views.AccountViewSet)
 router.register('tag', views.TagViewSet)
+router.register('operation', views.OperationViewSet)
 
 app_name = 'operation'
 

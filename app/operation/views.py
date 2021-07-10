@@ -2,7 +2,7 @@ from rest_framework import viewsets
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
-from core.models import Account, AccountType, Tag
+from core.models import Account, AccountType, Tag, Operation
 
 from operation import serializers
 
@@ -76,3 +76,11 @@ class TagViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Create a new object"""
         serializer.save(user=self.request.user)
+
+
+class OperationViewSet(viewsets.ModelViewSet):
+    """Manage operation in the database"""
+    queryset = Operation.objects.all()
+    serializer_class = serializers.OperationSerializer
+    authentication_classes = (TokenAuthentication,)
+    permission_classes = (IsAuthenticated,)
