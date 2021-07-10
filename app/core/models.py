@@ -92,6 +92,6 @@ class Operation(models.Model):
     name = models.CharField(max_length=255)
     description = models.TextField(max_length=255, blank=True)
     value = models.DecimalField(max_digits=6, decimal_places=2)
-    date = models.DateField(auto_now=False, auto_now_add=False)
+    date = models.DateField(auto_now=False, auto_now_add=False, null=True)
     tags = models.ManyToManyField('Tag')
     account = models.ForeignKey('Account', on_delete=models.CASCADE)
