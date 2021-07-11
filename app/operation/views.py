@@ -1,4 +1,6 @@
-from rest_framework import viewsets
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status, viewsets
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.permissions import IsAuthenticated
 
@@ -93,6 +95,9 @@ class OperationViewSet(viewsets.ModelViewSet):
         """Retrieve the operations for the authenticated user"""
         tags = self.request.query_params.get('tags')
         account = self.request.query_params.get('account')
+        year = self.request.query_params.get('year')
+        month = self.request.query_params.get('month')
+        day = self.request.query_params.get('day')
 
         queryset = self.queryset
         if tags:
@@ -101,6 +106,12 @@ class OperationViewSet(viewsets.ModelViewSet):
         if account:
             account_id = self._params_to_ints(account)
             queryset = queryset.filter(account__id__in=account_id)
+        if year:
+            queryset = queryset.filter(date__year=year)
+            if month:
+                queryset = queryset.filter(date__month=month)
+                if day:
+                    queryset = queryset.filter(date__day=day)
         return queryset.filter(user=self.request.user)
 
     def get_serializer_class(self):
@@ -113,3 +124,28 @@ class OperationViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Create a new operation"""
         serializer.save(user=self.request.user)
+
+    @action(methods=['GET'], detail=True, url_path='account-balance')
+    def account_balance(self, request, pk=None):
+        """Return the account balance"""
+        queryset = self.queryset
+        try:
+            account = Account.objects.get(pk=pk)
+        except Account.DoesNotExist:
+            return Response(
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        year = self.request.query_params.get('year')
+        month = self.request.query_params.get('month')
+        day = self.request.query_params.get('day')
+        if year:
+            queryset = queryset.filter(date__year=year)
+            if month:
+                queryset = queryset.filter(date__month=month)
+                if day:
+                    queryset = queryset.filter(date__day=day)
+
+        queryset = queryset.filter(account=account, user=self.request.user)
+        value_list = []
+        [value_list.append(op.value) for op in queryset]
+        return Response(data=sum(value_list), status=status.HTTP_200_OK)

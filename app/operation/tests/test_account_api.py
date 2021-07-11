@@ -1,3 +1,4 @@
+from datetime import datetime
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.test import TestCase
@@ -5,9 +6,10 @@ from django.test import TestCase
 from rest_framework import status
 from rest_framework.test import APIClient
 
-from core.models import Account, AccountType
+from core.models import Account, AccountType, Operation
 
 from operation.serializers import AccountSerializer, AccountDetailSerializer
+
 
 ACCOUNT_URL = reverse('operation:account-list')
 
@@ -24,6 +26,19 @@ def sample_account_type(user, name='Sample Account Type', calculate=True):
         name=name,
         calculate=calculate
         )
+
+
+def sample_operation(user, account, **params):
+    """Create and return a sample operation"""
+    defaults = {
+        'name': 'Sample Operation',
+        'value': 1.00,
+        'date': datetime.now().date(),
+        'account': account
+    }
+    defaults.update(params)
+
+    return Operation.objects.create(user=user, **defaults)
 
 
 def sample_account(user, **params):
